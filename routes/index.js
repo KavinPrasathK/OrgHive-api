@@ -1,14 +1,12 @@
-// import cryptoRandomString from 'crypto-random-string';
-
 var express = require('express');
 var router = express.Router();
 const db = require('../data/database');
 const bcrypt = require('bcryptjs');
-// const multer = require('multer');
 var path = require('path');
 const Crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const dotenv=require('dotenv');
+const axios=require('axios');
 dotenv.config();
 const transport=nodemailer.createTransport({
   service:"gmail",
@@ -71,8 +69,20 @@ router.post('/SignUpCustomer', async function (req, res) {
   });
 });
 
+router.post('/Gcaptcha', async function (req, res) {
+  const token = req.body.token;
+  await axios.post(
+    `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.SECRET_KEY}&response=${token}`
+  );
+  if (res.status(200)) {
+    console.log(res.status);
+    res.send("Human 👨 👩");
+  }else{
+    res.send("Robot 🤖");
+  }
+});
+
 router.post('/loginCustomer', async function (req, res) {
-  // console.log(req.body);
   const data = req.body;
   var query = `SELECT PASSWORD FROM customerdata where USERNAME=?`;
   const val = await db.query(query, data.userName);
@@ -82,8 +92,6 @@ router.post('/loginCustomer', async function (req, res) {
       flag: 'danger'
     });
   }
-
-  console.log(val[0][0]);
 
   const ispassvalid = await bcrypt.compare(data.password, val[0][0].PASSWORD);
   if (ispassvalid) {
